@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@phoebeyao — Investors</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --card: #141414;
+    --card-hover: #1a1a1a;
+    --border: #222;
+    --text: #e5e5e5;
+    --dim: #777;
+    --accent: #1d9bf0;
+    --accent-dim: rgba(29,155,240,0.12);
+    --green: #00ba7c;
+    --pink: #f91880;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+  .header-inner { max-width: 1400px; margin: 0 auto; }
+  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .header h1 span { color: var(--accent); }
+  .header .subtitle { color: var(--dim); font-size: 13px; }
+
+  .stats-bar { display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-value { font-size: 18px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .controls {
+    max-width: 1400px; margin: 16px auto; padding: 0 24px;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  }
+  .search-box {
+    flex: 1; min-width: 200px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 10px 16px; color: var(--text); font-size: 14px; outline: none;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--dim); }
+  select, .btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 10px 16px; color: var(--text); font-size: 13px; cursor: pointer; outline: none;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .result-count { color: var(--dim); font-size: 13px; margin-left: auto; }
+
+  /* Tier tabs */
+  .tier-tabs {
+    max-width: 1400px; margin: 0 auto; padding: 0 24px;
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .tier-tab {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 8px 16px; color: var(--dim); font-size: 13px; cursor: pointer;
+    transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .tier-tab:hover { border-color: #444; color: var(--text); }
+  .tier-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .tier-tab .count {
+    background: #333; border-radius: 10px; padding: 2px 8px;
+    font-size: 11px; font-weight: 600;
+  }
+  .tier-tab.active .count { background: rgba(29,155,240,0.3); }
+
+  .grid {
+    max-width: 1400px; margin: 0 auto; padding: 8px 24px 40px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;
+  }
+
+  /* Cards — no banner image, compact */
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; cursor: pointer; position: relative;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .card:hover { background: var(--card-hover); border-color: #333; }
+  .card-avatar {
+    width: 48px; height: 48px; border-radius: 50%; background: #222;
+    object-fit: cover; flex-shrink: 0;
+  }
+  .card-avatar.placeholder {
+    display: flex; align-items: center; justify-content: center;
+    color: #444; font-size: 20px;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-handle { color: var(--dim); font-size: 12px; }
+  .card-bio {
+    font-size: 12px; color: #aaa; margin-top: 6px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--dim); }
+  .card-meta strong { color: var(--text); font-weight: 600; }
+  .card-loc { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .card-loc::before { content: '📍 '; }
+  .badge-fc {
+    position: absolute; top: 12px; right: 12px; font-size: 10px;
+    background: rgba(249,24,128,0.15); color: var(--pink);
+    padding: 2px 8px; border-radius: 10px; font-weight: 600;
+  }
+
+  /* Shortlist heart */
+  .card-heart {
+    position: absolute; top: 10px; right: 10px; z-index: 5;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; color: #666;
+  }
+  .card-heart:hover { background: rgba(0,0,0,0.7); transform: scale(1.15); }
+  .card-heart.active { color: var(--pink); }
+  .card-heart svg { width: 16px; height: 16px; }
+  .badge-fc { right: 48px; } /* shift FC badge left to make room for heart */
+
+  /* Batch pagination */
+  .batch-bar {
+    max-width: 1400px; margin: 0 auto; padding: 0 24px;
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;
+  }
+  .batch-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 6px 14px; color: var(--dim); font-size: 12px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .batch-btn:hover { border-color: #444; color: var(--text); }
+  .batch-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .batch-label { color: var(--dim); font-size: 12px; margin-right: 4px; }
+
+  /* Export button */
+  .export-btn {
+    background: rgba(0,186,124,0.12); border: 1px solid var(--green); border-radius: 20px;
+    padding: 8px 16px; color: var(--green); font-size: 13px; cursor: pointer;
+    transition: all 0.15s; font-weight: 600;
+  }
+  .export-btn:hover { background: rgba(0,186,124,0.25); }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 10px 24px; border-radius: 20px;
+    font-size: 14px; font-weight: 600; z-index: 300; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .show-more-row {
+    grid-column: 1 / -1; text-align: center; padding: 20px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    width: 90%; max-width: 520px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal-banner {
+    height: 120px; background: linear-gradient(135deg, #1a1a2e, #16213e);
+    background-size: cover; background-position: center;
+    border-radius: 16px 16px 0 0; position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.6); border: none; color: #fff;
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px;
+  }
+  .modal-body { padding: 0 24px 24px; }
+  .modal-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 4px solid var(--card); margin-top: -36px; background: #222; object-fit: cover;
+  }
+  .modal-name { font-size: 20px; font-weight: 700; margin-top: 8px; }
+  .modal-handle { color: var(--dim); font-size: 15px; }
+  .modal-bio { font-size: 14px; color: #bbb; margin-top: 12px; line-height: 1.5; }
+  .modal-stats {
+    display: flex; gap: 24px; margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .modal-stat { display: flex; flex-direction: column; gap: 2px; }
+  .modal-stat-value { font-size: 16px; font-weight: 700; }
+  .modal-stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; }
+  .modal-loc { margin-top: 12px; color: var(--dim); font-size: 13px; }
+  .modal-loc::before { content: '📍 '; }
+  .modal-joined { color: var(--dim); font-size: 13px; margin-top: 4px; }
+  .modal-joined::before { content: '📅 Joined '; }
+  .modal-link {
+    display: inline-block; margin-top: 16px;
+    background: var(--accent); color: #fff; padding: 10px 24px; border-radius: 20px;
+    text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .modal-link:hover { opacity: 0.85; }
+
+  .loading { text-align: center; padding: 40px 24px; color: var(--dim); font-size: 14px; grid-column: 1/-1; }
+
+  .page-nav {
+    background: #111; border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+  }
+  .page-nav-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; gap: 16px;
+  }
+  .nav-link {
+    color: var(--dim); text-decoration: none; font-size: 13px;
+    font-weight: 600; padding: 4px 0;
+    transition: color 0.15s;
+  }
+  .nav-link:hover { color: var(--text); }
+  .nav-link.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; padding: 8px 12px 40px; }
+    .controls { padding: 0 12px; }
+    .tier-tabs { padding: 0 12px; }
+    .header { padding: 12px; }
+    .stats-bar { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <div class="page-nav-inner">
+    <a href="index.html" class="nav-link">All</a>
+    <a href="founders.html" class="nav-link">Founders</a>
+    <a href="investors.html" class="nav-link active">Investors</a>
+  </div>
+</nav>
+
+<div class="header">
+  <div class="header-inner">
+    <h1><span>Investors</span> Explorer</h1>
+    <p class="subtitle">Investors, VCs, and fund managers that Phoebe Yao follows</p>
+    <div class="stats-bar" id="stats-bar"></div>
+  </div>
+</div>
+
+<div class="tier-tabs" id="tier-tabs">
+  <div class="tier-tab active" data-tier="notable">🔥 Notable <span class="count" id="count-notable">…</span></div>
+  <div class="tier-tab" data-tier="active">⭐ Active <span class="count" id="count-active">…</span></div>
+  <div class="tier-tab" data-tier="general">👥 General <span class="count" id="count-general">…</span></div>
+  <div class="tier-tab" data-tier="low">👻 &lt;100 <span class="count" id="count-low">…</span></div>
+  <div class="tier-tab" data-tier="all">All <span class="count" id="count-all">…</span></div>
+  <div class="tier-tab" data-tier="shortlisted" style="margin-left:auto; background:rgba(249,24,128,0.1); border-color:var(--pink); color:var(--pink);">♥ Shortlisted <span class="count" id="count-shortlisted">0</span></div>
+</div>
+
+<div class="batch-bar" id="batch-bar" style="display:none;"></div>
+
+<div class="controls">
+  <input class="search-box" id="search" type="text" placeholder="Search by name, handle, bio, or location..." />
+  <select id="sort">
+    <option value="fc-desc">Most followers</option>
+    <option value="fc-asc" selected>Fewest followers</option>
+    <option value="fgc-desc">Most following</option>
+    <option value="tc-desc">Most tweets</option>
+    <option value="name-asc">Name A→Z</option>
+  </select>
+  <span class="result-count" id="result-count"></span>
+  <button class="export-btn" id="export-btn" onclick="exportShortlist()" style="display:none;">📋 Copy shortlist</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="grid" id="grid">
+  <div class="loading">Loading…</div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const INVESTOR_FILTER = /\b(investor|investing|vc\b|venture capital|venture partner|general partner|managing partner|partner at|gp at|lp\b|angel investor|fund manager|portfolio|capital|ventures|seed stage|early.stage|growth equity|private equity)\b/i;
+const FOUNDER_FILTER = /\b(founder|co-founder|cofounder|ceo|chief executive|founded|founding)\b/i;
+
+// Include if matches investor regex. If matches both founder and investor, still include.
+// The exclusion logic: we do NOT exclude anyone here since the spec says 
+// "if bio matches founder regex but NOT investor regex, exclude" — but we're filtering FOR investors,
+// so we just need: matches INVESTOR_FILTER
+function bioFilter(bio) {
+  return INVESTOR_FILTER.test(bio);
+}
+
+const TIERS = {notable:[], active:[], general:[], low:[]};
+const TIER_LABELS = {notable:'10K+', active:'1K–10K', general:'100–1K', low:'<100'};
+let tierLoaded = {notable:false, active:false, general:false, low:false};
+let currentTier = 'notable';
+let filtered = [];
+let visibleCount = 100;
+const BATCH_SIZE = 40;
+let currentBatch = 0; // 0 = show all (no batch filter)
+
+// Shortlist persistence
+let shortlisted = new Set(JSON.parse(localStorage.getItem('phoebeyao-shortlist-investors') || '[]'));
+function saveShortlist() {
+  localStorage.setItem('phoebeyao-shortlist-investors', JSON.stringify([...shortlisted]));
+  document.getElementById('count-shortlisted').textContent = shortlisted.size;
+  // Show/hide export button
+  document.getElementById('export-btn').style.display = shortlisted.size > 0 ? '' : 'none';
+}
+function toggleShortlist(handle, evt) {
+  evt.stopPropagation();
+  if (shortlisted.has(handle)) shortlisted.delete(handle);
+  else shortlisted.add(handle);
+  saveShortlist();
+  renderGrid();
+}
+
+function fmt(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return String(n);
+}
+function parseDate(s) { return s ? new Date(s) : null; }
+function fmtDate(s) { const d=parseDate(s); return d ? d.toLocaleDateString('en-US',{month:'short',year:'numeric'}) : ''; }
+function avatarUrl(p) { return p ? p.replace('_normal.','_200x200.') : ''; }
+function escHtml(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+function norm(f) {
+  return {
+    name: f.name||f.n||'', u: f.u||'', bio: f.bio||f.b||'',
+    loc: f.loc||f.l||'', pic: f.pic||f.p||'', banner: f.banner||f.bn||'',
+    created: f.created||f.c||'', fc: f.fc||0, fgc: f.fgc||0,
+    tc: f.tc||0, lc: f.lc||0, dm: f.dm||false,
+  };
+}
+
+function getAllLoaded() {
+  let all = [];
+  for (const t of ['notable','active','general','low']) {
+    all = all.concat(TIERS[t]);
+  }
+  return all;
+}
+
+function renderStats() {
+  const all = getAllLoaded();
+  const totalFollowers = all.reduce((s,f) => s + f.fc, 0);
+  const over10k = TIERS.notable.length;
+  const avg = all.length ? Math.round(totalFollowers / all.length) : 0;
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat"><span class="stat-value">${fmt(all.length)}</span><span class="stat-label">Loaded</span></div>
+    <div class="stat"><span class="stat-value">${fmt(totalFollowers)}</span><span class="stat-label">Combined reach</span></div>
+    <div class="stat"><span class="stat-value">${fmt(avg)}</span><span class="stat-label">Avg followers</span></div>
+    <div class="stat"><span class="stat-value">${over10k}</span><span class="stat-label">10K+ accounts</span></div>
+  `;
+}
+
+function getSource() {
+  if (currentTier === 'shortlisted') {
+    return getAllLoaded().filter(f => shortlisted.has(f.u));
+  }
+  if (currentTier === 'all') return getAllLoaded();
+  return TIERS[currentTier] || [];
+}
+
+// Batch bar rendering
+function renderBatchBar(totalItems) {
+  const bar = document.getElementById('batch-bar');
+  if (currentTier === 'shortlisted') { bar.style.display = 'none'; return; }
+  const totalBatches = Math.ceil(totalItems / BATCH_SIZE);
+  if (totalBatches <= 1) { bar.style.display = 'none'; currentBatch = 0; return; }
+  bar.style.display = 'flex';
+  let html = '<span class="batch-label">Batch:</span>';
+  html += `<button class="batch-btn ${currentBatch === 0 ? 'active' : ''}" onclick="setBatch(0)">All</button>`;
+  for (let i = 1; i <= totalBatches; i++) {
+    html += `<button class="batch-btn ${currentBatch === i ? 'active' : ''}" onclick="setBatch(${i})">${i}</button>`;
+  }
+  bar.innerHTML = html;
+}
+
+function setBatch(b) {
+  currentBatch = b;
+  applyFilters();
+}
+
+function applyFilters() {
+  visibleCount = 100;
+  const q = document.getElementById('search').value.toLowerCase();
+  const sort = document.getElementById('sort').value;
+  let src = getSource();
+
+  // Apply search filter first (before batching)
+  let searchFiltered = src.filter(f => {
+    if (!q) return true;
+    return `${f.name} ${f.u} ${f.bio} ${f.loc}`.toLowerCase().includes(q);
+  });
+
+  // Sort
+  const [key, dir] = sort.split('-');
+  searchFiltered.sort((a, b) => {
+    if (key === 'name') return dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    const av = a[key]||0, bv = b[key]||0;
+    return dir === 'desc' ? bv - av : av - bv;
+  });
+
+  // Render batch bar based on search-filtered count
+  renderBatchBar(searchFiltered.length);
+
+  // Apply batch slicing
+  if (currentBatch > 0) {
+    const start = (currentBatch - 1) * BATCH_SIZE;
+    filtered = searchFiltered.slice(start, start + BATCH_SIZE);
+  } else {
+    filtered = searchFiltered;
+  }
+
+  const batchLabel = currentBatch > 0 ? ` (batch ${currentBatch})` : '';
+  document.getElementById('result-count').textContent = `${filtered.length} of ${searchFiltered.length} accounts${batchLabel}`;
+  renderGrid();
+}
+
+const heartSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+const heartSvgFilled = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const show = currentBatch > 0 ? filtered : filtered.slice(0, visibleCount);
+
+  grid.innerHTML = show.map((f, i) => {
+    const isShortlisted = shortlisted.has(f.u);
+    return `
+    <div class="card" onclick="openModal(${i})">
+      <button class="card-heart ${isShortlisted ? 'active' : ''}" onclick="toggleShortlist('${escHtml(f.u)}', event)" title="${isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}">
+        ${isShortlisted ? heartSvgFilled : heartSvg}
+      </button>
+      ${f.fc >= 10000 ? `<span class="badge-fc">${fmt(f.fc)}</span>` : ''}
+      <img class="card-avatar" data-src="${avatarUrl(f.pic)}" alt="" />
+      <div class="card-info">
+        <div class="card-name">${escHtml(f.name)}</div>
+        <div class="card-handle">@${escHtml(f.u)}</div>
+        ${f.bio ? `<div class="card-bio">${escHtml(f.bio)}</div>` : ''}
+        ${f.loc ? `<div class="card-loc">${escHtml(f.loc)}</div>` : ''}
+        <div class="card-meta">
+          <span><strong>${fmt(f.fc)}</strong> followers</span>
+          <span><strong>${fmt(f.fgc)}</strong> following</span>
+          <span><strong>${fmt(f.tc)}</strong> tweets</span>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+
+  // Only show "show more" when NOT in batch mode
+  if (currentBatch === 0 && filtered.length > show.length) {
+    grid.innerHTML += `<div class="show-more-row">
+      <button class="btn" onclick="showMore()">Show more (${show.length} of ${filtered.length}) ↓</button>
+    </div>`;
+  }
+  if (filtered.length === 0) {
+    const msg = currentTier === 'shortlisted' ? 'No shortlisted accounts yet. Click the ♥ on any card to shortlist.' : 'No results.';
+    grid.innerHTML = `<div class="loading">${msg}</div>`;
+  }
+
+  observeImages();
+}
+
+// Lazy image loading
+let imgObserver;
+function observeImages() {
+  if (imgObserver) imgObserver.disconnect();
+  imgObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const img = e.target;
+        const src = img.dataset.src;
+        if (src) {
+          img.src = src;
+          img.onerror = () => { img.style.display = 'none'; };
+        }
+        imgObserver.unobserve(img);
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  document.querySelectorAll('img[data-src]').forEach(img => imgObserver.observe(img));
+}
+
+function showMore() {
+  visibleCount += 100;
+  renderGrid();
+}
+
+function openModal(i) {
+  const f = filtered[i];
+  const isShortlisted = shortlisted.has(f.u);
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-banner" ${f.banner ? `style="background-image:url('${f.banner}')"` : ''}>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img class="modal-avatar" src="${avatarUrl(f.pic)}" alt="" onerror="this.style.display='none'" />
+      <div class="modal-name">${escHtml(f.name)}</div>
+      <div class="modal-handle">@${escHtml(f.u)}</div>
+      ${f.bio ? `<div class="modal-bio">${escHtml(f.bio)}</div>` : ''}
+      <div class="modal-stats">
+        <div class="modal-stat"><span class="modal-stat-value">${fmt(f.fc)}</span><span class="modal-stat-label">Followers</span></div>
+        <div class="modal-stat"><span class="modal-stat-value">${fmt(f.fgc)}</span><span class="modal-stat-label">Following</span></div>
+        <div class="modal-stat"><span class="modal-stat-value">${fmt(f.tc)}</span><span class="modal-stat-label">Tweets</span></div>
+        <div class="modal-stat"><span class="modal-stat-value">${fmt(f.lc)}</span><span class="modal-stat-label">Likes</span></div>
+      </div>
+      ${f.loc ? `<div class="modal-loc">${escHtml(f.loc)}</div>` : ''}
+      ${f.created ? `<div class="modal-joined">${fmtDate(f.created)}</div>` : ''}
+      <div style="display:flex; gap:12px; align-items:center; margin-top:16px; flex-wrap:wrap;">
+        <a class="modal-link" href="https://x.com/${escHtml(f.u)}" target="_blank" rel="noopener">View on 𝕏</a>
+        <button class="card-heart ${isShortlisted ? 'active' : ''}" style="position:static; width:40px; height:40px;" onclick="toggleShortlist('${escHtml(f.u)}', event); openModal(${i});">
+          ${isShortlisted ? heartSvgFilled : heartSvg}
+        </button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target.id === 'modal-overlay') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Export shortlist
+function exportShortlist() {
+  const handles = [...shortlisted].map(u => `@${u}`).join('\n');
+  navigator.clipboard.writeText(handles).then(() => {
+    showToast(`Copied ${shortlisted.size} handles to clipboard`);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = handles; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast(`Copied ${shortlisted.size} handles to clipboard`);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('sort').addEventListener('change', applyFilters);
+
+// Tier tab clicks
+document.querySelectorAll('.tier-tab').forEach(tab => {
+  tab.addEventListener('click', async function() {
+    const tier = this.dataset.tier;
+    document.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    currentTier = tier;
+    currentBatch = 0; // reset batch on tier switch
+
+    if (tier === 'shortlisted') {
+      // Need all tiers loaded to show shortlisted across all
+      for (const t of ['notable','active','general','low']) {
+        if (!tierLoaded[t]) await loadTier(t);
+      }
+    } else if (tier === 'all') {
+      for (const t of ['active','general','low']) {
+        if (!tierLoaded[t]) await loadTier(t);
+      }
+    } else if (!tierLoaded[tier]) {
+      await loadTier(tier);
+    }
+
+    applyFilters();
+  });
+});
+
+async function loadTier(tier) {
+  if (tierLoaded[tier]) return;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = `<div class="loading">Loading ${TIER_LABELS[tier] || tier} accounts…</div>`;
+  try {
+    const resp = await fetch(`tier_${tier}.json`);
+    const data = await resp.json();
+    TIERS[tier] = data.map(norm).filter(f => bioFilter(f.bio));
+    tierLoaded[tier] = true;
+    document.getElementById(`count-${tier}`).textContent = TIERS[tier].length.toLocaleString();
+    renderStats();
+  } catch(e) {
+    grid.innerHTML = `<div class="loading">Failed to load: ${e.message}</div>`;
+  }
+}
+
+// Update "All" count after all tiers loaded
+function updateAllCount() {
+  const total = getAllLoaded().length;
+  document.getElementById('count-all').textContent = total.toLocaleString();
+}
+
+// Initial load
+async function init() {
+  saveShortlist(); // init count display
+  await loadTier('notable');
+  updateAllCount();
+  applyFilters();
+}
+init();
+</script>
+</body>
+</html>
